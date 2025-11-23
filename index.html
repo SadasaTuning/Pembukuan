@@ -82,12 +82,15 @@
             font-size: 12px;
             font-weight: 600;
             transition: all 0.3s ease;
-            display: none;
         }
         
         .install-btn:hover {
             background: var(--primary-dark);
             transform: scale(1.05);
+        }
+        
+        .install-btn.hidden {
+            display: none;
         }
         
         .theme-toggle {
@@ -536,6 +539,16 @@
             margin-left: 10px;
         }
         
+        .install-guide {
+            background: var(--info);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
         /* Responsive */
         @media (max-width: 480px) {
             .container {
@@ -558,12 +571,6 @@
             .header {
                 flex-wrap: wrap;
                 gap: 10px;
-            }
-            
-            .install-btn {
-                order: -1;
-                width: 100%;
-                margin-bottom: 10px;
             }
         }
 
@@ -698,10 +705,20 @@
         <!-- Tab Settings -->
         <div id="settings-tab" class="tab-content">
             <div class="settings-section">
+                <h3>📱 Install Aplikasi</h3>
+                <button class="install-btn" id="manualInstallButton">📲 Install ke Home Screen</button>
+                <div class="install-guide">
+                    💡 <strong>Cara Install:</strong><br>
+                    • <strong>Android:</strong> Menu → Add to Home Screen<br>
+                    • <strong>iOS:</strong> Share → Add to Home Screen<br>
+                    • <strong>Desktop:</strong> Klik Install button
+                </div>
+            </div>
+            
+            <div class="settings-section">
                 <h3>⚙️ Pengaturan Email</h3>
                 <input type="email" id="emailAddress" placeholder="Alamat email tujuan">
                 <button onclick="saveEmailSettings()">💾 Simpan Email</button>
-                <p class="info-text">Untuk kirim email otomatis</p>
             </div>
             
             <div class="settings-section">
@@ -727,7 +744,7 @@
                         Auto-kirim WhatsApp
                     </label>
                 </div>
-                <button onclick="saveExportSettings()" style="margin-top: 10px;">💾 Simpan Settings</button>
+                <button onclick="saveExportSettings()">💾 Simpan Settings</button>
             </div>
             
             <div class="settings-section">
@@ -741,11 +758,11 @@
             </div>
 
             <div class="settings-section">
-                <h3>📱 PWA Info</h3>
+                <h3>📊 App Info</h3>
                 <div class="info-text">
                     <p><strong>Status:</strong> <span id="pwaStatus">Loading...</span></p>
-                    <p><strong>Storage:</strong> <span id="storageInfo">Checking...</span></p>
-                    <p><strong>Installable:</strong> <span id="installableStatus">Checking...</span></p>
+                    <p><strong>Transaksi:</strong> <span id="transactionCount">0</span> data</p>
+                    <p><strong>Versi:</strong> 2.0.0</p>
                 </div>
                 <button onclick="clearAllData()" style="background: var(--danger); margin-top: 10px;">🗑️ Hapus Semua Data</button>
             </div>
@@ -753,81 +770,632 @@
     </div>
 
     <script>
-        // ===== PWA FUNCTIONALITY =====
+        // ===== PWA INSTALL FUNCTIONALITY =====
         let deferredPrompt;
         const installButton = document.getElementById('installButton');
+        const manualInstallButton = document.getElementById('manualInstallButton');
 
-        // Event listener untuk beforeinstallprompt
+        // Enhanced PWA Install Logic
         window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA Install Prompt Available');
             e.preventDefault();
             deferredPrompt = e;
+            
+            // Show install buttons
             installButton.style.display = 'block';
-            updatePWAStatus('Installable - Klik tombol Install');
+            manualInstallButton.style.display = 'block';
+            
+            updatePWAStatus('Siap diinstall');
         });
 
-        // Event listener untuk install button
+        // Auto install button
         installButton.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
+                
                 if (outcome === 'accepted') {
-                    installButton.style.display = 'none';
                     showNotification('Aplikasi berhasil diinstall! 🎉');
+                    installButton.classList.add('hidden');
+                    manualInstallButton.classList.add('hidden');
                     updatePWAStatus('Terinstall');
                 }
                 deferredPrompt = null;
+            } else {
+                showManualInstallGuide();
             }
         });
 
-        // Event listener untuk app installed
+        // Manual install button
+        manualInstallButton.addEventListener('click', () => {
+            showManualInstallGuide();
+        });
+
+        function showManualInstallGuide() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            let message = '';
+            if (isIOS) {
+                message = '📱 iOS: Tap share icon (⎗) → "Add to Home Screen" → "Add"';
+            } else if (isAndroid) {
+                message = '📱 Android: Tap menu (⋮) → "Add to Home Screen" → "Add"';
+            } else {
+                message = '💻 Desktop: Klik install button di address bar browser';
+            }
+            
+            showNotification(message, 'info');
+        }
+
+        // Check if app is already installed
         window.addEventListener('appinstalled', () => {
-            installButton.style.display = 'none';
+            console.log('PWA Installed');
+            installButton.classList.add('hidden');
+            manualInstallButton.classList.add('hidden');
             deferredPrompt = null;
             updatePWAStatus('Terinstall');
         });
 
-        // Update PWA status
-        function updatePWAStatus(status) {
-            document.getElementById('pwaStatus').textContent = status;
-            document.getElementById('installableStatus').textContent = 
-                deferredPrompt ? 'Ya' : 'Tidak';
+        // Check on load if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            installButton.classList.add('hidden');
+            manualInstallButton.classList.add('hidden');
+            updatePWAStatus('Terinstall');
         }
 
-        // Check storage usage
-        function updateStorageInfo() {
-            if (navigator.storage && navigator.storage.estimate) {
-                navigator.storage.estimate().then(estimate => {
-                    const used = (estimate.usage / 1024 / 1024).toFixed(2);
-                    const quota = (estimate.quota / 1024 / 1024).toFixed(2);
-                    document.getElementById('storageInfo').textContent = 
-                        `${used} MB / ${quota} MB`;
-                });
-            } else {
-                document.getElementById('storageInfo').textContent = 'Tidak tersedia';
+        function updatePWAStatus(status) {
+            document.getElementById('pwaStatus').textContent = status;
+        }
+
+        // ===== CORE APP FUNCTIONALITY =====
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let lastExportMonth = localStorage.getItem('lastExportMonth') || '';
+        let settings = JSON.parse(localStorage.getItem('appSettings')) || {
+            email: '',
+            whatsappNumber: '',
+            autoExport: true,
+            autoSendEmail: false,
+            autoSendWhatsApp: false,
+            theme: 'dark'
+        };
+
+        // Inisialisasi Aplikasi
+        function initializeApp() {
+            loadSettings();
+            applyTheme();
+            checkAutoExport();
+            renderAll();
+            setupMonthYearSelectors();
+            setupEventListeners();
+            updatePWAStatus('Aktif');
+            updateTransactionCount();
+            
+            console.log('Aplikasi Pembukuan siap!');
+            showNotification('Aplikasi siap! 🚀');
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
+            settings.theme = newTheme;
+            saveSettings();
+            
+            const themeBtn = document.querySelector('.theme-toggle');
+            themeBtn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            showNotification(`Tema ${newTheme === 'dark' ? 'Gelap' : 'Terang'} diaktifkan`);
+        }
+
+        function applyTheme() {
+            document.body.setAttribute('data-theme', settings.theme);
+            const themeBtn = document.querySelector('.theme-toggle');
+            themeBtn.textContent = settings.theme === 'dark' ? '🌙' : '☀️';
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`.tab-button:nth-child(${getTabIndex(tabName)})`).classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            if (tabName === 'reports') loadReportView();
+            if (tabName === 'input') document.getElementById('transactionInput').focus();
+        }
+
+        function getTabIndex(tabName) {
+            const tabs = { 'input': 1, 'current': 2, 'reports': 3, 'settings': 4 };
+            return tabs[tabName] || 1;
+        }
+
+        // Settings Management
+        function loadSettings() {
+            document.getElementById('emailAddress').value = settings.email || '';
+            document.getElementById('whatsappNumber').value = settings.whatsappNumber || '';
+            document.getElementById('autoExport').checked = settings.autoExport;
+            document.getElementById('autoSendEmail').checked = settings.autoSendEmail;
+            document.getElementById('autoSendWhatsApp').checked = settings.autoSendWhatsApp;
+        }
+
+        function saveEmailSettings() {
+            settings.email = document.getElementById('emailAddress').value;
+            saveSettings();
+            showNotification('Email berhasil disimpan!');
+        }
+
+        function saveWhatsAppSettings() {
+            settings.whatsappNumber = document.getElementById('whatsappNumber').value;
+            saveSettings();
+            showNotification('Nomor WhatsApp disimpan!');
+        }
+
+        function saveExportSettings() {
+            settings.autoExport = document.getElementById('autoExport').checked;
+            settings.autoSendEmail = document.getElementById('autoSendEmail').checked;
+            settings.autoSendWhatsApp = document.getElementById('autoSendWhatsApp').checked;
+            saveSettings();
+            showNotification('Export settings disimpan!');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+        }
+
+        // Transaction Management
+        function addTransaction() {
+            const input = document.getElementById('transactionInput');
+            const text = input.value.trim();
+            
+            if (!text) {
+                showNotification('Masukkan deskripsi dan jumlah!', 'warning');
+                return;
+            }
+            
+            const amount = parseAmount(text);
+            if (amount === 0) {
+                showNotification('Format jumlah tidak valid! Contoh: "remap beat 100rb"', 'warning');
+                return;
+            }
+            
+            const description = extractDescription(text) || 'Pendapatan';
+            const now = new Date();
+            
+            const transaction = {
+                id: Date.now(),
+                description: description,
+                amount: amount,
+                date: now.toISOString().split('T')[0],
+                displayDate: now.toLocaleDateString('id-ID')
+            };
+            
+            transactions.unshift(transaction);
+            saveTransactions();
+            renderAll();
+            
+            input.value = '';
+            input.focus();
+            showNotification('Transaksi berhasil ditambahkan!');
+        }
+
+        function parseAmount(text) {
+            text = text.toLowerCase().replace(/\s/g, '');
+            const match = text.match(/(\d+)(rb|k|ribu|ratus|jt|juta)/);
+            
+            if (match) {
+                const number = parseInt(match[1]);
+                const unit = match[2];
+                const multipliers = { 'rb': 1000, 'k': 1000, 'ribu': 1000, 'ratus': 100000, 'jt': 1000000, 'juta': 1000000 };
+                return number * (multipliers[unit] || 1);
+            }
+            
+            const numberMatch = text.match(/\d+/);
+            return numberMatch ? parseInt(numberMatch[0]) : 0;
+        }
+
+        function extractDescription(text) {
+            return text.replace(/\d+(rb|k|ribu|ratus|jt|juta)?/gi, '').trim();
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Hapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                renderAll();
+                showNotification('Transaksi dihapus!');
             }
         }
 
-        // ===== EVENT LISTENERS COMPLETE =====
+        function clearCurrentMonth() {
+            const current = getCurrentMonth();
+            const currentMonthData = getTransactionsByMonth(current.year, current.month);
+            
+            if (currentMonthData.length === 0) {
+                showNotification('Tidak ada transaksi bulan ini!', 'warning');
+                return;
+            }
+            
+            if (confirm(`Hapus semua transaksi bulan ini (${currentMonthData.length} transaksi)?`)) {
+                transactions = transactions.filter(t => {
+                    const date = new Date(t.date);
+                    return !(date.getFullYear() === current.year && date.getMonth() + 1 === current.month);
+                });
+                saveTransactions();
+                renderAll();
+                showNotification('Semua transaksi bulan ini dihapus!');
+            }
+        }
+
+        function saveTransactions() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            updateTransactionCount();
+        }
+
+        function updateTransactionCount() {
+            document.getElementById('transactionCount').textContent = transactions.length;
+        }
+
+        // Data Export & Reporting
+        function checkAutoExport() {
+            if (!settings.autoExport) return;
+            
+            const now = new Date();
+            const currentMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
+            
+            if (lastExportMonth && lastExportMonth !== currentMonth && transactions.length > 0) {
+                const lastMonth = getPreviousMonth();
+                const lastMonthData = getTransactionsByMonth(lastMonth.year, lastMonth.month);
+                
+                if (lastMonthData.length > 0) {
+                    autoExportLastMonth(lastMonth.year, lastMonth.month, lastMonthData);
+                }
+            }
+            
+            lastExportMonth = currentMonth;
+            localStorage.setItem('lastExportMonth', currentMonth);
+        }
+
+        function autoExportLastMonth(year, month, data) {
+            const monthName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
+            
+            const excelData = generateExcelData(data, monthName, year);
+            const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            downloadFile(blob, `Laporan_${monthName}_${year}.xlsx`);
+            
+            showNotification(`Laporan ${monthName} ${year} telah diexport otomatis!`);
+        }
+
+        function generateExcelData(data, monthName, year) {
+            const total = data.reduce((sum, t) => sum + t.amount, 0);
+            let content = `LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}\n\nTanggal\tDeskripsi\tJumlah\n`;
+            data.forEach(t => content += `${t.displayDate}\t${t.description}\t${t.amount}\n`);
+            content += `\nTOTAL\t\t${total}`;
+            return content;
+        }
+
+        function generateCSVData(data) {
+            let csv = 'Tanggal,Deskripsi,Jumlah\n';
+            const total = data.reduce((sum, t) => sum + t.amount, 0);
+            data.forEach(t => csv += `"${t.displayDate}","${t.description}",${t.amount}\n`);
+            csv += `\nTotal,,${total}`;
+            return csv;
+        }
+
+        function downloadFile(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportSelectedMonth(format) {
+            const month = parseInt(document.getElementById('reportMonth').value);
+            const year = parseInt(document.getElementById('reportYear').value);
+            const data = getTransactionsByMonth(year, month);
+            
+            if (data.length === 0) {
+                showNotification('Tidak ada data untuk diexport!', 'warning');
+                return;
+            }
+            
+            const monthName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
+            
+            if (format === 'excel') {
+                const excelData = generateExcelData(data, monthName, year);
+                const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                downloadFile(blob, `Laporan_${monthName}_${year}.xlsx`);
+            } else {
+                const csvData = generateCSVData(data);
+                const blob = new Blob([csvData], { type: 'text/csv' });
+                downloadFile(blob, `Laporan_${monthName}_${year}.csv`);
+            }
+            
+            showNotification(`Laporan ${monthName} ${year} berhasil diexport!`);
+        }
+
+        function exportAllData(format) {
+            if (transactions.length === 0) {
+                showNotification('Tidak ada data untuk diexport!', 'warning');
+                return;
+            }
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            if (format === 'excel') {
+                const excelData = generateExcelData(transactions, 'Semua', 'Data');
+                const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                downloadFile(blob, `Laporan_Semua_Data_${dateStr}.xlsx`);
+            } else {
+                const csvData = generateCSVData(transactions);
+                const blob = new Blob([csvData], { type: 'text/csv' });
+                downloadFile(blob, `Laporan_Semua_Data_${dateStr}.csv`);
+            }
+            
+            showNotification('Semua data berhasil diexport!');
+        }
+
+        // Sharing Functions
+        function generateReportMessage() {
+            const month = parseInt(document.getElementById('reportMonth').value);
+            const year = parseInt(document.getElementById('reportYear').value);
+            const data = getTransactionsByMonth(year, month);
+            const monthName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
+            const total = data.reduce((sum, t) => sum + t.amount, 0);
+            
+            return `📊 LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}
+
+💰 TOTAL: Rp ${total.toLocaleString('id-ID')}
+
+📋 DETAIL TRANSAKSI:
+${data.map((t, i) => `${i+1}. ${t.displayDate} - ${t.description} - Rp ${t.amount.toLocaleString('id-ID')}`).join('\n')}
+
+_Generated by Pembukuan App_`;
+        }
+
+        function copyReportToClipboard() {
+            const message = generateReportMessage();
+            navigator.clipboard.writeText(message).then(() => {
+                showNotification('Laporan disalin ke clipboard! 📋');
+            }).catch(() => {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = message;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Laporan disalin! 📋');
+            });
+        }
+
+        function shareToWhatsApp() {
+            const message = generateReportMessage();
+            const encoded = encodeURIComponent(message);
+            const url = settings.whatsappNumber ? 
+                `https://api.whatsapp.com/send?phone=${settings.whatsappNumber}&text=${encoded}` :
+                `https://wa.me/?text=${encoded}`;
+            window.open(url, '_blank');
+            showNotification('Membuka WhatsApp... 💚');
+        }
+
+        function shareToTelegram() {
+            const message = generateReportMessage();
+            const encoded = encodeURIComponent(message);
+            const url = `https://t.me/share/url?text=${encoded}`;
+            window.open(url, '_blank');
+            showNotification('Membuka Telegram... 📱');
+        }
+
+        function sendEmailReport() {
+            const message = generateReportMessage();
+            const month = parseInt(document.getElementById('reportMonth').value);
+            const year = parseInt(document.getElementById('reportYear').value);
+            const monthName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
+            
+            const subject = `Laporan Pendapatan ${monthName} ${year}`;
+            const body = message;
+            
+            const mailto = settings.email ? 
+                `mailto:${settings.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` :
+                `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            window.location.href = mailto;
+        }
+
+        // Backup & Restore
+        function backupData() {
+            const backup = { transactions, settings, timestamp: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            downloadFile(blob, `backup_pembukuan_${new Date().toISOString().split('T')[0]}.json`);
+            showNotification('Backup data berhasil!');
+        }
+
+        function restoreData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        const backup = JSON.parse(e.target.result);
+                        if (confirm('Restore data? Data saat ini akan diganti.')) {
+                            transactions = backup.transactions || [];
+                            settings = { ...settings, ...backup.settings };
+                            saveTransactions();
+                            saveSettings();
+                            renderAll();
+                            loadSettings();
+                            showNotification('Data berhasil di-restore!');
+                        }
+                    } catch {
+                        showNotification('File backup tidak valid!', 'warning');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function clearAllData() {
+            if (confirm('HAPUS SEMUA DATA? Tindakan ini tidak dapat dibatalkan!')) {
+                localStorage.clear();
+                transactions = [];
+                settings = { email: '', whatsappNumber: '', autoExport: true, autoSendEmail: false, autoSendWhatsApp: false, theme: 'dark' };
+                renderAll();
+                loadSettings();
+                showNotification('Semua data telah dihapus 🗑️');
+            }
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // UI Rendering
+        function renderAll() {
+            updateSummaryCards();
+            renderCurrentMonth();
+            loadReportView();
+            updateTransactionCount();
+        }
+
+        function updateSummaryCards() {
+            const current = getCurrentMonth();
+            const previous = getPreviousMonth();
+            
+            const currentTotal = getTransactionsByMonth(current.year, current.month).reduce((sum, t) => sum + t.amount, 0);
+            const previousTotal = getTransactionsByMonth(previous.year, previous.month).reduce((sum, t) => sum + t.amount, 0);
+            
+            document.getElementById('currentMonthTotal').textContent = formatNumber(currentTotal);
+            document.getElementById('lastMonthTotal').textContent = formatNumber(previousTotal);
+        }
+
+        function renderCurrentMonth() {
+            const current = getCurrentMonth();
+            const data = getTransactionsByMonth(current.year, current.month);
+            const total = data.reduce((sum, t) => sum + t.amount, 0);
+            
+            document.getElementById('currentMonthDetailed').textContent = formatNumber(total);
+            
+            const container = document.getElementById('currentMonthList');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div>📭</div><div>Belum ada transaksi bulan ini</div></div>';
+            } else {
+                container.innerHTML = data.map(t => `
+                    <div class="transaction-item">
+                        <div class="transaction-desc">
+                            <strong>${t.description}</strong>
+                            <div class="transaction-date">${t.displayDate}</div>
+                        </div>
+                        <div class="transaction-amount">${formatNumber(t.amount)}</div>
+                        <button class="delete-btn" onclick="deleteTransaction(${t.id})">Hapus</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Helper Functions
+        function formatNumber(num) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+        }
+
+        function getCurrentMonth() {
+            const now = new Date();
+            return { year: now.getFullYear(), month: now.getMonth() + 1 };
+        }
+
+        function getPreviousMonth() {
+            const now = new Date();
+            let year = now.getFullYear();
+            let month = now.getMonth();
+            if (month === 0) { month = 12; year--; }
+            return { year, month };
+        }
+
+        function getTransactionsByMonth(year, month) {
+            return transactions.filter(t => {
+                const date = new Date(t.date);
+                return date.getFullYear() === year && date.getMonth() + 1 === month;
+            });
+        }
+
+        function setupMonthYearSelectors() {
+            const monthSelect = document.getElementById('reportMonth');
+            const yearSelect = document.getElementById('reportYear');
+            
+            monthSelect.innerHTML = '';
+            yearSelect.innerHTML = '';
+            
+            ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+                .forEach((month, i) => {
+                    const option = document.createElement('option');
+                    option.value = i + 1;
+                    option.textContent = month;
+                    monthSelect.appendChild(option);
+                });
+            
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= currentYear - 5; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            const current = getCurrentMonth();
+            monthSelect.value = current.month;
+            yearSelect.value = current.year;
+        }
+
+        function loadReportView() {
+            const month = parseInt(document.getElementById('reportMonth').value);
+            const year = parseInt(document.getElementById('reportYear').value);
+            const data = getTransactionsByMonth(year, month);
+            const total = data.reduce((sum, t) => sum + t.amount, 0);
+            
+            document.getElementById('selectedMonthTotal').textContent = formatNumber(total);
+            
+            const container = document.getElementById('reportList');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div>📊</div><div>Tidak ada transaksi di bulan ini</div></div>';
+            } else {
+                container.innerHTML = data.map(t => `
+                    <div class="transaction-item">
+                        <div class="transaction-desc">
+                            <strong>${t.description}</strong>
+                            <div class="transaction-date">${t.displayDate}</div>
+                        </div>
+                        <div class="transaction-amount">${formatNumber(t.amount)}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Event Listeners
         function setupEventListeners() {
-            // Keyboard Events
-            document.getElementById('transactionInput').addEventListener('keypress', function(e) {
+            // Keyboard
+            document.getElementById('transactionInput').addEventListener('keypress', e => {
                 if (e.key === 'Enter') addTransaction();
             });
 
-            document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + N untuk new transaction
+            document.addEventListener('keydown', e => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                     e.preventDefault();
                     document.getElementById('transactionInput').focus();
                 }
-                
-                // Escape untuk clear input
                 if (e.key === 'Escape') {
                     document.getElementById('transactionInput').value = '';
-                    document.getElementById('transactionInput').blur();
                 }
-                
-                // Number shortcuts untuk tabs (1-4)
                 if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     const tabs = ['input', 'current', 'reports', 'settings'];
@@ -835,41 +1403,20 @@
                 }
             });
 
-            // Input Events
-            document.getElementById('transactionInput').addEventListener('input', function(e) {
-                validateTransactionInput(e.target.value);
-            });
-
-            // Tab Events
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const tabName = this.textContent.toLowerCase();
-                    switch(tabName) {
-                        case 'input': switchTab('input'); break;
-                        case 'bulan ini': switchTab('current'); break;
-                        case 'laporan': switchTab('reports'); break;
-                        case 'settings': switchTab('settings'); break;
-                    }
-                });
-            });
-
-            // Settings Events
+            // Settings
             document.getElementById('autoExport').addEventListener('change', function() {
                 settings.autoExport = this.checked;
                 saveSettings();
             });
-
             document.getElementById('autoSendEmail').addEventListener('change', function() {
                 settings.autoSendEmail = this.checked;
                 saveSettings();
             });
-
             document.getElementById('autoSendWhatsApp').addEventListener('change', function() {
                 settings.autoSendWhatsApp = this.checked;
                 saveSettings();
             });
 
-            // Auto-save on blur
             document.getElementById('emailAddress').addEventListener('blur', function() {
                 if (this.value !== settings.email) {
                     settings.email = this.value;
@@ -886,710 +1433,34 @@
                 }
             });
 
-            // Month/Year selector events
+            // Selectors
             document.getElementById('reportMonth').addEventListener('change', loadReportView);
             document.getElementById('reportYear').addEventListener('change', loadReportView);
 
-            // Touch Events untuk mobile
-            let touchStartX = 0;
-            let touchEndX = 0;
-
-            document.addEventListener('touchstart', function(e) {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-
-            document.addEventListener('touchend', function(e) {
-                touchEndX = e.changedTouches[0].screenX;
-                handleSwipe();
-            });
-
-            // Online/Offline Events
-            window.addEventListener('online', function() {
-                showNotification('Koneksi internet tersedia 📶', 'success');
-            });
-
-            window.addEventListener('offline', function() {
-                showNotification('Anda sedang offline 🌐', 'warning');
-            });
-
-            // Beforeunload event untuk auto-save
-            window.addEventListener('beforeunload', function() {
-                saveTransactions();
-            });
-
-            // Visibility change event (tab switch)
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    // App di background, save data
-                    saveTransactions();
-                }
-            });
-
-            // Context menu prevention (disable right click)
-            document.addEventListener('contextmenu', function(e) {
-                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                    e.preventDefault();
-                }
-            });
-
-            // Load event untuk preload resources
-            window.addEventListener('load', function() {
-                showNotification('Aplikasi siap! 🚀');
-                updateStorageInfo();
+            // Input validation
+            document.getElementById('transactionInput').addEventListener('input', function(e) {
+                const amount = parseAmount(e.target.value);
+                this.style.borderColor = amount > 0 ? 'var(--secondary)' : 'var(--border)';
             });
         }
 
-        function handleSwipe() {
-            const swipeThreshold = 50;
-            const swipeDistance = touchEndX - touchStartX;
-
-            if (Math.abs(swipeDistance) > swipeThreshold) {
-                if (swipeDistance > 0) {
-                    // Swipe right - previous tab
-                    navigateTabs(-1);
-                } else {
-                    // Swipe left - next tab
-                    navigateTabs(1);
-                }
-            }
-        }
-
-        function navigateTabs(direction) {
-            const tabs = ['input', 'current', 'reports', 'settings'];
-            const currentTab = document.querySelector('.tab-button.active').textContent.toLowerCase();
-            let currentIndex = tabs.findIndex(tab => 
-                tab === currentTab || (currentTab === 'bulan ini' && tab === 'current')
-            );
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.background = type === 'success' ? 'var(--secondary)' : 
+                                          type === 'warning' ? 'var(--warning)' : 'var(--info)';
+            notification.style.display = 'block';
             
-            let newIndex = currentIndex + direction;
-            if (newIndex < 0) newIndex = tabs.length - 1;
-            if (newIndex >= tabs.length) newIndex = 0;
-            
-            switchTab(tabs[newIndex]);
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
         }
 
-        function validateTransactionInput(text) {
-            const amount = parseAmount(text);
-            const input = document.getElementById('transactionInput');
-            
-            if (amount > 0) {
-                input.style.borderColor = 'var(--secondary)';
-                input.title = `Terdeteksi: Rp ${amount.toLocaleString('id-ID')}`;
-            } else {
-                input.style.borderColor = 'var(--border)';
-                input.title = 'Masukkan transaksi (contoh: "service 100rb")';
-            }
-        }
-
-        // ===== SHARING FUNCTIONS =====
-        function generateReportMessage() {
-            const month = parseInt(document.getElementById('reportMonth').value);
-            const year = parseInt(document.getElementById('reportYear').value);
-            const data = getTransactionsByMonth(year, month);
-            
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            const monthName = monthNames[month - 1];
-            const total = data.reduce((sum, t) => sum + t.amount, 0);
-            
-            return `📊 LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}
-
-💰 TOTAL: Rp ${total.toLocaleString('id-ID')}
-
-📋 DETAIL TRANSAKSI:
-${data.map((t, i) => `${i+1}. ${t.displayDate} - ${t.description} - Rp ${t.amount.toLocaleString('id-ID')}`).join('\n')}
-
-_Generated by Pembukuan App_`;
-        }
-
-        function copyReportToClipboard() {
-            const message = generateReportMessage();
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(message).then(() => {
-                    showNotification('Laporan disalin ke clipboard! 📋');
-                }).catch(() => {
-                    fallbackCopyToClipboard(message);
-                });
-            } else {
-                fallbackCopyToClipboard(message);
-            }
-        }
-
-        function fallbackCopyToClipboard(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showNotification('Laporan disalin! 📋');
-            } catch (err) {
-                showNotification('Gagal menyalin laporan', 'warning');
-            }
-            document.body.removeChild(textArea);
-        }
-
-        function shareToWhatsApp() {
-            const message = generateReportMessage();
-            const encodedMessage = encodeURIComponent(message);
-            
-            if (settings.whatsappNumber) {
-                const url = `https://api.whatsapp.com/send?phone=${settings.whatsappNumber}&text=${encodedMessage}`;
-                window.open(url, '_blank');
-            } else {
-                const url = `https://wa.me/?text=${encodedMessage}`;
-                window.open(url, '_blank');
-            }
-            showNotification('Membuka WhatsApp... 💚');
-        }
-
-        function shareToTelegram() {
-            const message = generateReportMessage();
-            const encodedMessage = encodeURIComponent(message);
-            const url = `https://t.me/share/url?url=${encodeURIComponent('Laporan Pembukuan')}&text=${encodedMessage}`;
-            window.open(url, '_blank');
-            showNotification('Membuka Telegram... 📱');
-        }
-
-        function sendEmailReport() {
-            const message = generateReportMessage();
-            const month = parseInt(document.getElementById('reportMonth').value);
-            const year = parseInt(document.getElementById('reportYear').value);
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            const monthName = monthNames[month - 1];
-            
-            const subject = `Laporan Pendapatan ${monthName} ${year}`;
-            const body = message;
-            
-            if (settings.email) {
-                const mailtoLink = `mailto:${settings.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = mailtoLink;
-            } else {
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = mailtoLink;
-            }
-        }
-
-        function printReport() {
-            window.print();
-        }
-
-        function clearAllData() {
-            if (confirm('HAPUS SEMUA DATA? Tindakan ini tidak dapat dibatalkan!')) {
-                localStorage.clear();
-                transactions = [];
-                settings = {
-                    email: '',
-                    whatsappNumber: '',
-                    autoExport: true,
-                    autoSendEmail: false,
-                    autoSendWhatsApp: false,
-                    theme: 'dark'
-                };
-                renderAll();
-                loadSettings();
-                showNotification('Semua data telah dihapus 🗑️');
-            }
-        }
-
-// ===== CORE APP FUNCTIONALITY =====
-// Data dan State Management
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-let lastExportMonth = localStorage.getItem('lastExportMonth') || '';
-let settings = JSON.parse(localStorage.getItem('appSettings')) || {
-    email: '',
-    whatsappNumber: '',
-    autoExport: true,
-    autoSendEmail: false,
-    autoSendWhatsApp: false,
-    theme: 'dark'
-};
-
-// Inisialisasi Aplikasi
-function initializeApp() {
-    loadSettings();
-    applyTheme();
-    checkAutoExport();
-    renderAll();
-    setupMonthYearSelectors();
-    setupEventListeners();
-    updatePWAStatus('Aktif');
-    updateStorageInfo();
-    
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-                console.log('SW registered: ', registration);
-                updatePWAStatus('Aktif + Offline');
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-                updatePWAStatus('Aktif (Online Only)');
-            });
-    }
-}
-
-// Theme Management
-function toggleTheme() {
-    const currentTheme = document.body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', newTheme);
-    settings.theme = newTheme;
-    saveSettings();
-    
-    const themeBtn = document.querySelector('.theme-toggle');
-    themeBtn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-    showNotification(`Tema ${newTheme === 'dark' ? 'Gelap' : 'Terang'} diaktifkan`);
-}
-
-function applyTheme() {
-    document.body.setAttribute('data-theme', settings.theme);
-    const themeBtn = document.querySelector('.theme-toggle');
-    themeBtn.textContent = settings.theme === 'dark' ? '🌙' : '☀️';
-}
-
-// Tab Management
-function switchTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Activate new tab
-    const tabButtons = {
-        'input': document.querySelector('.tab-button:nth-child(1)'),
-        'current': document.querySelector('.tab-button:nth-child(2)'),
-        'reports': document.querySelector('.tab-button:nth-child(3)'),
-        'settings': document.querySelector('.tab-button:nth-child(4)')
-    };
-    
-    if (tabButtons[tabName]) {
-        tabButtons[tabName].classList.add('active');
-    }
-    
-    document.getElementById(tabName + '-tab').classList.add('active');
-    
-    if (tabName === 'reports') {
-        loadReportView();
-    }
-    
-    if (tabName === 'input') {
-        document.getElementById('transactionInput').focus();
-    }
-}
-
-// Settings Management
-function loadSettings() {
-    document.getElementById('emailAddress').value = settings.email || '';
-    document.getElementById('whatsappNumber').value = settings.whatsappNumber || '';
-    document.getElementById('autoExport').checked = settings.autoExport;
-    document.getElementById('autoSendEmail').checked = settings.autoSendEmail;
-    document.getElementById('autoSendWhatsApp').checked = settings.autoSendWhatsApp;
-}
-
-function saveEmailSettings() {
-    settings.email = document.getElementById('emailAddress').value;
-    saveSettings();
-    showNotification('Email berhasil disimpan!');
-}
-
-function saveWhatsAppSettings() {
-    settings.whatsappNumber = document.getElementById('whatsappNumber').value;
-    saveSettings();
-    showNotification('Nomor WhatsApp disimpan!');
-}
-
-function saveExportSettings() {
-    settings.autoExport = document.getElementById('autoExport').checked;
-    settings.autoSendEmail = document.getElementById('autoSendEmail').checked;
-    settings.autoSendWhatsApp = document.getElementById('autoSendWhatsApp').checked;
-    saveSettings();
-    showNotification('Export settings disimpan!');
-}
-
-function saveSettings() {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
-}
-
-// Transaction Management
-function addTransaction() {
-    const input = document.getElementById('transactionInput');
-    const text = input.value.trim();
-    
-    if (!text) {
-        showNotification('Masukkan deskripsi dan jumlah!', 'warning');
-        return;
-    }
-    
-    const amount = parseAmount(text);
-    if (amount === 0) {
-        showNotification('Format jumlah tidak valid! Contoh: "remap beat 100rb"', 'warning');
-        return;
-    }
-    
-    const description = extractDescription(text) || 'Pendapatan';
-    const now = new Date();
-    
-    const transaction = {
-        id: Date.now(),
-        description: description,
-        amount: amount,
-        date: now.toISOString().split('T')[0],
-        displayDate: now.toLocaleDateString('id-ID', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-        })
-    };
-    
-    transactions.unshift(transaction);
-    saveTransactions();
-    renderAll();
-    
-    input.value = '';
-    input.focus();
-    showNotification('Transaksi berhasil ditambahkan!');
-}
-
-function parseAmount(text) {
-    text = text.toLowerCase().replace(/\s/g, '');
-    
-    const match = text.match(/(\d+)(rb|k|ribu|ratus|jt|juta|jt)/);
-    if (match) {
-        let number = parseInt(match[1]);
-        const unit = match[2];
-        
-        if (unit === 'rb' || unit === 'k' || unit === 'ribu') {
-            return number * 1000;
-        } else if (unit === 'ratus') {
-            return number * 100000;
-        } else if (unit === 'jt' || unit === 'juta') {
-            return number * 1000000;
-        }
-    }
-    
-    const numberMatch = text.match(/\d+/);
-    if (numberMatch) {
-        return parseInt(numberMatch[0]);
-    }
-    
-    return 0;
-}
-
-function extractDescription(text) {
-    return text.replace(/\d+(rb|k|ribu|ratus|jt|juta|jt)?/gi, '').trim();
-}
-
-function deleteTransaction(id) {
-    if (confirm('Hapus transaksi ini?')) {
-        transactions = transactions.filter(t => t.id !== id);
-        saveTransactions();
-        renderAll();
-        showNotification('Transaksi dihapus!');
-    }
-}
-
-function clearCurrentMonth() {
-    const current = getCurrentMonth();
-    const currentMonthTransactions = getTransactionsByMonth(current.year, current.month);
-    
-    if (currentMonthTransactions.length === 0) {
-        showNotification('Tidak ada transaksi bulan ini!', 'warning');
-        return;
-    }
-    
-    if (confirm(`Hapus semua transaksi bulan ini (${currentMonthTransactions.length} transaksi)?`)) {
-        transactions = transactions.filter(t => {
-            const transactionDate = new Date(t.date);
-            return !(transactionDate.getFullYear() === current.year && 
-                    (transactionDate.getMonth() + 1) === current.month);
-        });
-        saveTransactions();
-        renderAll();
-        showNotification('Semua transaksi bulan ini dihapus!');
-    }
-}
-
-function saveTransactions() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-// Data Export & Reporting
-function checkAutoExport() {
-    if (!settings.autoExport) return;
-    
-    const now = new Date();
-    const currentMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
-    
-    if (lastExportMonth && lastExportMonth !== currentMonth && transactions.length > 0) {
-        const lastMonth = getPreviousMonth();
-        const lastMonthData = getTransactionsByMonth(lastMonth.year, lastMonth.month);
-        
-        if (lastMonthData.length > 0) {
-            autoExportLastMonth(lastMonth.year, lastMonth.month, lastMonthData);
-        }
-    }
-    
-    lastExportMonth = currentMonth;
-    localStorage.setItem('lastExportMonth', currentMonth);
-}
-
-function autoExportLastMonth(year, month, data) {
-    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const monthName = monthNames[month - 1];
-    
-    // Export Excel
-    const excelData = generateExcelData(data, monthName, year);
-    const excelBlob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    
-    // Simpan ke localStorage sebagai backup
-    const exportKey = `export_${year}_${month.toString().padStart(2, '0')}`;
-    localStorage.setItem(exportKey, JSON.stringify(data));
-    
-    // Download otomatis
-    downloadFile(excelBlob, `Laporan_${monthName}_${year}.xlsx`);
-    
-    showNotification(`Laporan ${monthName} ${year} telah diexport otomatis!`);
-}
-
-function generateExcelData(data, monthName, year) {
-    const total = data.reduce((sum, t) => sum + t.amount, 0);
-    
-    let excelContent = 'LAPORAN PENDAPATAN ' + monthName.toUpperCase() + ' ' + year + '\n\n';
-    excelContent += 'Tanggal\tDeskripsi\tJumlah\n';
-    
-    data.forEach(t => {
-        excelContent += `${t.displayDate}\t${t.description}\t${t.amount}\n`;
-    });
-    
-    excelContent += `\nTOTAL\t\t${total}`;
-    return excelContent;
-}
-
-function generateCSVData(data) {
-    let csv = 'Tanggal,Deskripsi,Jumlah\n';
-    let total = 0;
-    
-    data.forEach(t => {
-        csv += `"${t.displayDate}","${t.description}",${t.amount}\n`;
-        total += t.amount;
-    });
-    
-    csv += `\nTotal,,${total}`;
-    return csv;
-}
-
-function downloadFile(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
-
-function exportSelectedMonth(format) {
-    const month = parseInt(document.getElementById('reportMonth').value);
-    const year = parseInt(document.getElementById('reportYear').value);
-    const data = getTransactionsByMonth(year, month);
-    
-    if (data.length === 0) {
-        showNotification('Tidak ada data untuk diexport!', 'warning');
-        return;
-    }
-    
-    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const monthName = monthNames[month - 1];
-    
-    if (format === 'excel') {
-        const excelData = generateExcelData(data, monthName, year);
-        const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(blob, `Laporan_${monthName}_${year}.xlsx`);
-    } else {
-        const csvData = generateCSVData(data);
-        const blob = new Blob([csvData], { type: 'text/csv' });
-        downloadFile(blob, `Laporan_${monthName}_${year}.csv`);
-    }
-    
-    showNotification(`Laporan ${monthName} ${year} berhasil diexport!`);
-}
-
-function exportAllData(format) {
-    if (transactions.length === 0) {
-        showNotification('Tidak ada data untuk diexport!', 'warning');
-        return;
-    }
-    
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    
-    if (format === 'excel') {
-        const excelData = generateExcelData(transactions, 'Semua', 'Data');
-        const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(blob, `Laporan_Semua_Data_${dateStr}.xlsx`);
-    } else {
-        const csvData = generateCSVData(transactions);
-        const blob = new Blob([csvData], { type: 'text/csv' });
-        downloadFile(blob, `Laporan_Semua_Data_${dateStr}.csv`);
-    }
-    
-    showNotification('Semua data berhasil diexport!');
-}
-
-function backupData() {
-    const backup = {
-        transactions: transactions,
-        settings: settings,
-        timestamp: new Date().toISOString()
-    };
-    
-    const backupStr = JSON.stringify(backup, null, 2);
-    const blob = new Blob([backupStr], { type: 'application/json' });
-    downloadFile(blob, `backup_pembukuan_${new Date().toISOString().split('T')[0]}.json`);
-    showNotification('Backup data berhasil!');
-}
-
-function restoreData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            try {
-                const backup = JSON.parse(e.target.result);
-                
-                if (confirm('Restore data? Data saat ini akan diganti.')) {
-                    transactions = backup.transactions || [];
-                    settings = { ...settings, ...backup.settings };
-                    saveTransactions();
-                    saveSettings();
-                    renderAll();
-                    loadSettings();
-                    showNotification('Data berhasil di-restore!');
-                }
-            } catch (error) {
-                showNotification('File backup tidak valid!', 'warning');
-            }
-        };
-        
-        reader.readAsText(file);
-    };
-    
-    input.click();
-}
-
-// UI Rendering
-function renderAll() {
-    updateSummaryCards();
-    renderCurrentMonth();
-    loadReportView();
-}
-
-function updateSummaryCards() {
-    const current = getCurrentMonth();
-    const previous = getPreviousMonth();
-    
-    const currentMonthData = getTransactionsByMonth(current.year, current.month);
-    const previousMonthData = getTransactionsByMonth(previous.year, previous.month);
-    
-    const currentTotal = currentMonthData.reduce((sum, t) => sum + t.amount, 0);
-    const previousTotal = previousMonthData.reduce((sum, t) => sum + t.amount, 0);
-    
-    document.getElementById('currentMonthTotal').textContent = formatNumber(currentTotal);
-    document.getElementById('lastMonthTotal').textContent = formatNumber(previousTotal);
-}
-
-function renderCurrentMonth() {
-    const current = getCurrentMonth();
-    const currentMonthData = getTransactionsByMonth(current.year, current.month);
-    const container = document.getElementById('currentMonthList');
-    const totalElement = document.getElementById('currentMonthDetailed');
-    
-    const total = currentMonthData.reduce((sum, t) => sum + t.amount, 0);
-    totalElement.textContent = formatNumber(total);
-    
-    if (currentMonthData.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div>📭</div>
-                <div>Belum ada transaksi bulan ini</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = currentMonthData.map(transaction => `
-        <div class="transaction-item">
-            <div class="transaction-desc">
-                <strong>${transaction.description}</strong>
-                <div class="transaction-date">${transaction.displayDate}</div>
-            </div>
-            <div class="transaction-amount">${formatNumber(transaction.amount)}</div>
-            <button class="delete-btn" onclick="deleteTransaction(${transaction.id})">Hapus</button>
-        </div>
-    `).join('');
-}
-
-// Helper Functions
-function formatNumber(num) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(num);
-}
-
-function getCurrentMonth() {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() + 1 };
-}
-
-function getPreviousMonth() {
-    const now = new Date();
-    let year = now.getFullYear();
-    let month = now.getMonth();
-    
-    if (month === 0) {
-        month = 12;
-        year--;
-    }
-    
-    return { year: year, month: month };
-}
-
-function getTransactionsByMonth(year, month) {
-    return transactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate.getFullYear() === year && 
-               (transactionDate.getMonth() + 1) === month;
-    });
-}
-
-function setupMonthYearSelectors() {
-    const monthSelect = document.getElementById('reportMonth');
-    const yearSelect = document.getElementById('reportYear');
-    
-    // Clear existing options
-    monthSelect.innerHTML = '';
-    yearSelect.innerHTML = '';
-    
-    const months = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>ni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
     
