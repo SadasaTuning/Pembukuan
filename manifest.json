@@ -1,0 +1,41 @@
+{
+    "name": "Pembukuan Pendapatan",
+    "short_name": "Pembukuan",
+    "description": "Aplikasi pembukuan pendapatan bulanan dengan PWA",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#6366f1",
+    "orientation": "portrait",
+    "scope": "/",
+    "lang": "id",
+    "categories": ["finance", "productivity"],
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512", 
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshot-wide.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide"
+        },
+        {
+            "src": "screenshot-narrow.png", 
+            "sizes": "540x720",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ]
+}
