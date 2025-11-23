@@ -6,6 +6,10 @@
     <title>Pembukuan Pendapatan</title>
     <meta name="description" content="Aplikasi pembukuan pendapatan bulanan">
     <meta name="theme-color" content="#6366f1"/>
+    
+    <!-- SCRIPT SHEETJS UNTUK EXPORT EXCEL YANG BENAR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="./icon-192.png">
     <style>
@@ -1062,6 +1066,47 @@
         }
 
         // ===== DATA EXPORT & REPORTING =====
+        
+        // FUNGSI BARU: Export Excel menggunakan SheetJS
+        function exportToExcel(data, filename) {
+            try {
+                // Siapkan data untuk worksheet
+                const worksheetData = [
+                    ['LAPORAN PENDAPATAN'], // Header utama
+                    [''], // Baris kosong
+                    ['Tanggal', 'Deskripsi', 'Jumlah (Rp)'] // Header kolom
+                ];
+
+                // Tambahkan data transaksi
+                data.forEach(transaction => {
+                    worksheetData.push([
+                        transaction.displayDate,
+                        transaction.description,
+                        transaction.amount
+                    ]);
+                });
+
+                // Tambahkan baris total
+                const total = data.reduce((sum, t) => sum + t.amount, 0);
+                worksheetData.push(['', 'TOTAL', total]);
+
+                // Buat worksheet
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+                // Buat workbook dan tambahkan worksheet
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
+
+                // Export ke file Excel
+                XLSX.writeFile(workbook, filename);
+                
+                return true;
+            } catch (error) {
+                console.error('Error exporting to Excel:', error);
+                return false;
+            }
+        }
+
         function checkAutoExport() {
             if (!settings.autoExport) return;
             
@@ -1085,74 +1130,10 @@
             const monthName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
             
-            const excelData = generateExcelData(data, monthName, year);
-            const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            downloadFile(blob, `Laporan_${monthName}_${year}.xlsx`);
-            
-            showNotification(`Laporan ${monthName} ${year} telah diexport otomatis!`);
-        }
-
-        // PERBAIKAN: Generate Excel dengan format yang benar
-        function generateExcelData(data, monthName, year) {
-            const total = data.reduce((sum, t) => sum + t.amount, 0);
-            
-            // Gunakan format XML untuk Excel yang benar
-            let content = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Styles>
-  <Style ss:ID="Default" ss:Name="Normal">
-   <Alignment ss:Vertical="Bottom"/>
-   <Borders/>
-   <Font ss:FontName="Calibri" ss:Size="12"/>
-   <Interior/>
-   <NumberFormat/>
-   <Protection/>
-  </Style>
-  <Style ss:ID="Header">
-   <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1"/>
-   <Interior ss:Color="#E6E6FA" ss:Pattern="Solid"/>
-  </Style>
-  <Style ss:ID="Total">
-   <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1"/>
-   <Interior ss:Color="#90EE90" ss:Pattern="Solid"/>
-  </Style>
- </Styles>
- <Worksheet ss:Name="${monthName} ${year}">
-  <Table>
-   <Column ss:Width="100"/>
-   <Column ss:Width="200"/>
-   <Column ss:Width="100"/>
-   <Row>
-    <Cell ss:StyleID="Header"><Data ss:Type="String">LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}</Data></Cell>
-   </Row>
-   <Row>
-    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal</Data></Cell>
-    <Cell ss:StyleID="Header"><Data ss:Type="String">Deskripsi</Data></Cell>
-    <Cell ss:StyleID="Header"><Data ss:Type="String">Jumlah</Data></Cell>
-   </Row>`;
-            
-            data.forEach(t => {
-                content += `
-   <Row>
-    <Cell><Data ss:Type="String">${t.displayDate}</Data></Cell>
-    <Cell><Data ss:Type="String">${t.description}</Data></Cell>
-    <Cell><Data ss:Type="Number">${t.amount}</Data></Cell>
-   </Row>`;
-            });
-            
-            content += `
-   <Row>
-    <Cell ss:StyleID="Total"><Data ss:Type="String">TOTAL</Data></Cell>
-    <Cell ss:StyleID="Total"></Cell>
-    <Cell ss:StyleID="Total"><Data ss:Type="Number">${total}</Data></Cell>
-   </Row>
-  </Table>
- </Worksheet>
-</Workbook>`;
-            
-            return content;
+            const success = exportToExcel(data, `Laporan_${monthName}_${year}.xlsx`);
+            if (success) {
+                showNotification(`Laporan ${monthName} ${year} telah diexport otomatis!`);
+            }
         }
 
         function generateCSVData(data) {
@@ -1188,16 +1169,18 @@
                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][month - 1];
             
             if (format === 'excel') {
-                const excelData = generateExcelData(data, monthName, year);
-                const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
-                downloadFile(blob, `Laporan_${monthName}_${year}.xls`);
+                const success = exportToExcel(data, `Laporan_${monthName}_${year}.xlsx`);
+                if (success) {
+                    showNotification(`Laporan ${monthName} ${year} berhasil diexport ke Excel!`);
+                } else {
+                    showNotification('Gagal mengexport ke Excel!', 'warning');
+                }
             } else {
                 const csvData = generateCSVData(data);
                 const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
                 downloadFile(blob, `Laporan_${monthName}_${year}.csv`);
+                showNotification(`Laporan ${monthName} ${year} berhasil diexport ke CSV!`);
             }
-            
-            showNotification(`Laporan ${monthName} ${year} berhasil diexport!`);
         }
 
         function exportAllData(format) {
@@ -1207,17 +1190,20 @@
             }
             
             const dateStr = new Date().toISOString().split('T')[0];
+            
             if (format === 'excel') {
-                const excelData = generateExcelData(transactions, 'Semua', 'Data');
-                const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
-                downloadFile(blob, `Laporan_Semua_Data_${dateStr}.xls`);
+                const success = exportToExcel(transactions, `Laporan_Semua_Data_${dateStr}.xlsx`);
+                if (success) {
+                    showNotification('Semua data berhasil diexport ke Excel!');
+                } else {
+                    showNotification('Gagal mengexport ke Excel!', 'warning');
+                }
             } else {
                 const csvData = generateCSVData(transactions);
                 const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
                 downloadFile(blob, `Laporan_Semua_Data_${dateStr}.csv`);
+                showNotification('Semua data berhasil diexport ke CSV!');
             }
-            
-            showNotification('Semua data berhasil diexport!');
         }
 
         // ===== SHARING FUNCTIONS =====
@@ -1581,6 +1567,19 @@ _Generated by Pembukuan App_`;
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.style.background = type === 'success' ? 'var(--secondary)' : 
+                                          type === 'warning' ? 'var(--warning)' : 'var(--info)';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // ===== INITIALIZE APP =====
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>(--secondary)' : 
                                           type === 'warning' ? 'var(--warning)' : 'var(--info)';
             notification.style.display = 'block';
             
