@@ -1092,11 +1092,66 @@
             showNotification(`Laporan ${monthName} ${year} telah diexport otomatis!`);
         }
 
+        // PERBAIKAN: Generate Excel dengan format yang benar
         function generateExcelData(data, monthName, year) {
             const total = data.reduce((sum, t) => sum + t.amount, 0);
-            let content = `LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}\n\nTanggal\tDeskripsi\tJumlah\n`;
-            data.forEach(t => content += `${t.displayDate}\t${t.description}\t${t.amount}\n`);
-            content += `\nTOTAL\t\t${total}`;
+            
+            // Gunakan format XML untuk Excel yang benar
+            let content = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" ss:Size="12"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1"/>
+   <Interior ss:Color="#E6E6FA" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="Total">
+   <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1"/>
+   <Interior ss:Color="#90EE90" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="${monthName} ${year}">
+  <Table>
+   <Column ss:Width="100"/>
+   <Column ss:Width="200"/>
+   <Column ss:Width="100"/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">LAPORAN PENDAPATAN ${monthName.toUpperCase()} ${year}</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Deskripsi</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jumlah</Data></Cell>
+   </Row>`;
+            
+            data.forEach(t => {
+                content += `
+   <Row>
+    <Cell><Data ss:Type="String">${t.displayDate}</Data></Cell>
+    <Cell><Data ss:Type="String">${t.description}</Data></Cell>
+    <Cell><Data ss:Type="Number">${t.amount}</Data></Cell>
+   </Row>`;
+            });
+            
+            content += `
+   <Row>
+    <Cell ss:StyleID="Total"><Data ss:Type="String">TOTAL</Data></Cell>
+    <Cell ss:StyleID="Total"></Cell>
+    <Cell ss:StyleID="Total"><Data ss:Type="Number">${total}</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>`;
+            
             return content;
         }
 
@@ -1134,11 +1189,11 @@
             
             if (format === 'excel') {
                 const excelData = generateExcelData(data, monthName, year);
-                const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                downloadFile(blob, `Laporan_${monthName}_${year}.xlsx`);
+                const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
+                downloadFile(blob, `Laporan_${monthName}_${year}.xls`);
             } else {
                 const csvData = generateCSVData(data);
-                const blob = new Blob([csvData], { type: 'text/csv' });
+                const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
                 downloadFile(blob, `Laporan_${monthName}_${year}.csv`);
             }
             
@@ -1154,11 +1209,11 @@
             const dateStr = new Date().toISOString().split('T')[0];
             if (format === 'excel') {
                 const excelData = generateExcelData(transactions, 'Semua', 'Data');
-                const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                downloadFile(blob, `Laporan_Semua_Data_${dateStr}.xlsx`);
+                const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
+                downloadFile(blob, `Laporan_Semua_Data_${dateStr}.xls`);
             } else {
                 const csvData = generateCSVData(transactions);
-                const blob = new Blob([csvData], { type: 'text/csv' });
+                const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
                 downloadFile(blob, `Laporan_Semua_Data_${dateStr}.csv`);
             }
             
