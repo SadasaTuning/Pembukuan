@@ -616,26 +616,26 @@
     
     <div class="container">
         <div class="header">
-            <button class="install-btn" id="installButton">📱 Install App</button>
+            <button class="install-btn hidden" id="installButton">📱 Install App</button>
             <div style="display: flex; align-items: center;">
                 <h1>📊 Pembukuan Bulanan</h1>
                 <span class="pwa-badge">PWA</span>
             </div>
-            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
         </div>
         
         <div class="tab-navigation">
-            <button class="tab-button active" onclick="switchTab('input')">Input</button>
-            <button class="tab-button" onclick="switchTab('current')">Bulan Ini</button>
-            <button class="tab-button" onclick="switchTab('reports')">Laporan</button>
-            <button class="tab-button" onclick="switchTab('settings')">Settings</button>
+            <button class="tab-button active" data-tab="input">Input</button>
+            <button class="tab-button" data-tab="current">Bulan Ini</button>
+            <button class="tab-button" data-tab="reports">Laporan</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
         </div>
         
         <!-- Tab Input -->
         <div id="input-tab" class="tab-content active">
             <div class="input-section">
                 <input type="text" id="transactionInput" placeholder="Contoh: remap beat 100rb" autofocus>
-                <button onclick="addTransaction()">➕ Tambah Pendapatan</button>
+                <button id="addTransactionBtn">➕ Tambah Pendapatan</button>
                 <p class="info-text">Contoh: "service motor 150rb", "jual aksesoris 50rb", "modif 2jt"</p>
             </div>
             
@@ -690,15 +690,15 @@
             </div>
             
             <div class="export-options">
-                <button class="export-btn excel" onclick="exportSelectedMonth('excel')">📗 Export Excel</button>
-                <button class="export-btn csv" onclick="exportSelectedMonth('csv')">📘 Export CSV</button>
+                <button class="export-btn excel" id="exportExcelBtn">📗 Export Excel</button>
+                <button class="export-btn csv" id="exportCsvBtn">📘 Export CSV</button>
             </div>
             
             <div class="share-options">
-                <button class="share-btn copy" onclick="copyReportToClipboard()">📋 Copy Laporan</button>
-                <button class="share-btn whatsapp" onclick="shareToWhatsApp()">💚 WhatsApp</button>
-                <button class="share-btn telegram" onclick="shareToTelegram()">📱 Telegram</button>
-                <button class="share-btn email" onclick="sendEmailReport()">📧 Email</button>
+                <button class="share-btn copy" id="copyReportBtn">📋 Copy Laporan</button>
+                <button class="share-btn whatsapp" id="shareWhatsAppBtn">💚 WhatsApp</button>
+                <button class="share-btn telegram" id="shareTelegramBtn">📱 Telegram</button>
+                <button class="share-btn email" id="sendEmailBtn">📧 Email</button>
             </div>
         </div>
         
@@ -706,7 +706,7 @@
         <div id="settings-tab" class="tab-content">
             <div class="settings-section">
                 <h3>📱 Install Aplikasi</h3>
-                <button class="install-btn" id="manualInstallButton">📲 Install ke Home Screen</button>
+                <button class="install-btn hidden" id="manualInstallButton">📲 Install ke Home Screen</button>
                 <div class="install-guide">
                     💡 <strong>Cara Install:</strong><br>
                     • <strong>Android:</strong> Menu → Add to Home Screen<br>
@@ -718,13 +718,13 @@
             <div class="settings-section">
                 <h3>⚙️ Pengaturan Email</h3>
                 <input type="email" id="emailAddress" placeholder="Alamat email tujuan">
-                <button onclick="saveEmailSettings()">💾 Simpan Email</button>
+                <button id="saveEmailBtn">💾 Simpan Email</button>
             </div>
             
             <div class="settings-section">
                 <h3>🤖 Pengaturan WhatsApp</h3>
                 <input type="text" id="whatsappNumber" placeholder="Nomor WhatsApp (62812...)">
-                <button onclick="saveWhatsAppSettings()">💾 Simpan WhatsApp</button>
+                <button id="saveWhatsAppBtn">💾 Simpan WhatsApp</button>
                 <p class="info-text">Format: 6281234567890 (tanpa +)</p>
             </div>
             
@@ -744,17 +744,17 @@
                         Auto-kirim WhatsApp
                     </label>
                 </div>
-                <button onclick="saveExportSettings()">💾 Simpan Settings</button>
+                <button id="saveExportSettingsBtn">💾 Simpan Settings</button>
             </div>
             
             <div class="settings-section">
                 <h3>🛠️ Tools</h3>
-                <button onclick="clearCurrentMonth()" style="background: var(--warning);">🗑️ Hapus Bulan Ini</button>
-                <button onclick="exportAllData('excel')" style="background: var(--secondary); margin-top: 5px;">📗 Export Semua Data (Excel)</button>
-                <button onclick="exportAllData('csv')" style="background: var(--warning); margin-top: 5px;">📘 Export Semua Data (CSV)</button>
-                <button onclick="backupData()" style="background: #9C27B0; margin-top: 5px;">💾 Backup Data</button>
-                <button onclick="restoreData()" style="background: #607D8B; margin-top: 5px;">📥 Restore Data</button>
-                <button onclick="printReport()" style="background: #6B7280; margin-top: 5px;">🖨️ Print Laporan</button>
+                <button id="clearCurrentMonthBtn" style="background: var(--warning);">🗑️ Hapus Bulan Ini</button>
+                <button id="exportAllExcelBtn" style="background: var(--secondary); margin-top: 5px;">📗 Export Semua Data (Excel)</button>
+                <button id="exportAllCsvBtn" style="background: var(--warning); margin-top: 5px;">📘 Export Semua Data (CSV)</button>
+                <button id="backupDataBtn" style="background: #9C27B0; margin-top: 5px;">💾 Backup Data</button>
+                <button id="restoreDataBtn" style="background: #607D8B; margin-top: 5px;">📥 Restore Data</button>
+                <button id="printReportBtn" style="background: #6B7280; margin-top: 5px;">🖨️ Print Laporan</button>
             </div>
 
             <div class="settings-section">
@@ -764,31 +764,74 @@
                     <p><strong>Transaksi:</strong> <span id="transactionCount">0</span> data</p>
                     <p><strong>Versi:</strong> 2.0.0</p>
                 </div>
-                <button onclick="clearAllData()" style="background: var(--danger); margin-top: 10px;">🗑️ Hapus Semua Data</button>
+                <button id="clearAllDataBtn" style="background: var(--danger); margin-top: 10px;">🗑️ Hapus Semua Data</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== PWA INSTALL FUNCTIONALITY =====
+        // ===== VARIABLE DECLARATIONS =====
         let deferredPrompt;
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let lastExportMonth = localStorage.getItem('lastExportMonth') || '';
+        let settings = JSON.parse(localStorage.getItem('appSettings')) || {
+            email: '',
+            whatsappNumber: '',
+            autoExport: true,
+            autoSendEmail: false,
+            autoSendWhatsApp: false,
+            theme: 'dark'
+        };
+
+        // ===== DOM ELEMENTS =====
         const installButton = document.getElementById('installButton');
         const manualInstallButton = document.getElementById('manualInstallButton');
+        const themeToggle = document.getElementById('themeToggle');
+        const transactionInput = document.getElementById('transactionInput');
+        const addTransactionBtn = document.getElementById('addTransactionBtn');
+        const saveEmailBtn = document.getElementById('saveEmailBtn');
+        const saveWhatsAppBtn = document.getElementById('saveWhatsAppBtn');
+        const saveExportSettingsBtn = document.getElementById('saveExportSettingsBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const copyReportBtn = document.getElementById('copyReportBtn');
+        const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
+        const shareTelegramBtn = document.getElementById('shareTelegramBtn');
+        const sendEmailBtn = document.getElementById('sendEmailBtn');
+        const clearCurrentMonthBtn = document.getElementById('clearCurrentMonthBtn');
+        const exportAllExcelBtn = document.getElementById('exportAllExcelBtn');
+        const exportAllCsvBtn = document.getElementById('exportAllCsvBtn');
+        const backupDataBtn = document.getElementById('backupDataBtn');
+        const restoreDataBtn = document.getElementById('restoreDataBtn');
+        const printReportBtn = document.getElementById('printReportBtn');
+        const clearAllDataBtn = document.getElementById('clearAllDataBtn');
 
-        // Enhanced PWA Install Logic
+        // ===== SERVICE WORKER REGISTRATION =====
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registered: ', registration.scope);
+                        updatePWAStatus('Service Worker Active');
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed: ', error);
+                        updatePWAStatus('Service Worker Failed');
+                    });
+            }
+        }
+
+        // ===== PWA INSTALL FUNCTIONALITY =====
         window.addEventListener('beforeinstallprompt', (e) => {
             console.log('PWA Install Prompt Available');
             e.preventDefault();
             deferredPrompt = e;
             
-            // Show install buttons
-            installButton.style.display = 'block';
-            manualInstallButton.style.display = 'block';
-            
+            installButton.classList.remove('hidden');
+            manualInstallButton.classList.remove('hidden');
             updatePWAStatus('Siap diinstall');
         });
 
-        // Auto install button
         installButton.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -806,10 +849,27 @@
             }
         });
 
-        // Manual install button
         manualInstallButton.addEventListener('click', () => {
             showManualInstallGuide();
         });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA Installed');
+            installButton.classList.add('hidden');
+            manualInstallButton.classList.add('hidden');
+            deferredPrompt = null;
+            updatePWAStatus('Terinstall');
+        });
+
+        function checkIfAppIsInstalled() {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                installButton.classList.add('hidden');
+                manualInstallButton.classList.add('hidden');
+                updatePWAStatus('Terinstall');
+            } else {
+                updatePWAStatus('Siap diinstall');
+            }
+        }
 
         function showManualInstallGuide() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -827,54 +887,27 @@
             showNotification(message, 'info');
         }
 
-        // Check if app is already installed
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA Installed');
-            installButton.classList.add('hidden');
-            manualInstallButton.classList.add('hidden');
-            deferredPrompt = null;
-            updatePWAStatus('Terinstall');
-        });
-
-        // Check on load if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            installButton.classList.add('hidden');
-            manualInstallButton.classList.add('hidden');
-            updatePWAStatus('Terinstall');
-        }
-
         function updatePWAStatus(status) {
             document.getElementById('pwaStatus').textContent = status;
         }
 
-        // ===== CORE APP FUNCTIONALITY =====
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        let lastExportMonth = localStorage.getItem('lastExportMonth') || '';
-        let settings = JSON.parse(localStorage.getItem('appSettings')) || {
-            email: '',
-            whatsappNumber: '',
-            autoExport: true,
-            autoSendEmail: false,
-            autoSendWhatsApp: false,
-            theme: 'dark'
-        };
-
-        // Inisialisasi Aplikasi
+        // ===== APP INITIALIZATION =====
         function initializeApp() {
+            registerServiceWorker();
+            checkIfAppIsInstalled();
             loadSettings();
             applyTheme();
             checkAutoExport();
             renderAll();
             setupMonthYearSelectors();
             setupEventListeners();
-            updatePWAStatus('Aktif');
             updateTransactionCount();
             
             console.log('Aplikasi Pembukuan siap!');
             showNotification('Aplikasi siap! 🚀');
         }
 
-        // Theme Management
+        // ===== THEME MANAGEMENT =====
         function toggleTheme() {
             const currentTheme = document.body.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -882,35 +915,28 @@
             settings.theme = newTheme;
             saveSettings();
             
-            const themeBtn = document.querySelector('.theme-toggle');
-            themeBtn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
             showNotification(`Tema ${newTheme === 'dark' ? 'Gelap' : 'Terang'} diaktifkan`);
         }
 
         function applyTheme() {
             document.body.setAttribute('data-theme', settings.theme);
-            const themeBtn = document.querySelector('.theme-toggle');
-            themeBtn.textContent = settings.theme === 'dark' ? '🌙' : '☀️';
+            themeToggle.textContent = settings.theme === 'dark' ? '🌙' : '☀️';
         }
 
-        // Tab Management
+        // ===== TAB MANAGEMENT =====
         function switchTab(tabName) {
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            document.querySelector(`.tab-button:nth-child(${getTabIndex(tabName)})`).classList.add('active');
+            document.querySelector(`.tab-button[data-tab="${tabName}"]`).classList.add('active');
             document.getElementById(tabName + '-tab').classList.add('active');
             
             if (tabName === 'reports') loadReportView();
-            if (tabName === 'input') document.getElementById('transactionInput').focus();
+            if (tabName === 'input') transactionInput.focus();
         }
 
-        function getTabIndex(tabName) {
-            const tabs = { 'input': 1, 'current': 2, 'reports': 3, 'settings': 4 };
-            return tabs[tabName] || 1;
-        }
-
-        // Settings Management
+        // ===== SETTINGS MANAGEMENT =====
         function loadSettings() {
             document.getElementById('emailAddress').value = settings.email || '';
             document.getElementById('whatsappNumber').value = settings.whatsappNumber || '';
@@ -943,10 +969,9 @@
             localStorage.setItem('appSettings', JSON.stringify(settings));
         }
 
-        // Transaction Management
+        // ===== TRANSACTION MANAGEMENT =====
         function addTransaction() {
-            const input = document.getElementById('transactionInput');
-            const text = input.value.trim();
+            const text = transactionInput.value.trim();
             
             if (!text) {
                 showNotification('Masukkan deskripsi dan jumlah!', 'warning');
@@ -974,8 +999,8 @@
             saveTransactions();
             renderAll();
             
-            input.value = '';
-            input.focus();
+            transactionInput.value = '';
+            transactionInput.focus();
             showNotification('Transaksi berhasil ditambahkan!');
         }
 
@@ -1036,7 +1061,7 @@
             document.getElementById('transactionCount').textContent = transactions.length;
         }
 
-        // Data Export & Reporting
+        // ===== DATA EXPORT & REPORTING =====
         function checkAutoExport() {
             if (!settings.autoExport) return;
             
@@ -1140,7 +1165,7 @@
             showNotification('Semua data berhasil diexport!');
         }
 
-        // Sharing Functions
+        // ===== SHARING FUNCTIONS =====
         function generateReportMessage() {
             const month = parseInt(document.getElementById('reportMonth').value);
             const year = parseInt(document.getElementById('reportYear').value);
@@ -1164,7 +1189,6 @@ _Generated by Pembukuan App_`;
             navigator.clipboard.writeText(message).then(() => {
                 showNotification('Laporan disalin ke clipboard! 📋');
             }).catch(() => {
-                // Fallback
                 const textArea = document.createElement('textarea');
                 textArea.value = message;
                 document.body.appendChild(textArea);
@@ -1210,7 +1234,7 @@ _Generated by Pembukuan App_`;
             window.location.href = mailto;
         }
 
-        // Backup & Restore
+        // ===== BACKUP & RESTORE =====
         function backupData() {
             const backup = { transactions, settings, timestamp: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -1261,7 +1285,7 @@ _Generated by Pembukuan App_`;
             window.print();
         }
 
-        // UI Rendering
+        // ===== UI RENDERING =====
         function renderAll() {
             updateSummaryCards();
             renderCurrentMonth();
@@ -1298,13 +1322,13 @@ _Generated by Pembukuan App_`;
                             <div class="transaction-date">${t.displayDate}</div>
                         </div>
                         <div class="transaction-amount">${formatNumber(t.amount)}</div>
-                        <button class="delete-btn" onclick="deleteTransaction(${t.id})">Hapus</button>
+                        <button class="delete-btn" data-id="${t.id}">Hapus</button>
                     </div>
                 `).join('');
             }
         }
 
-        // Helper Functions
+        // ===== HELPER FUNCTIONS =====
         function formatNumber(num) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
         }
@@ -1381,29 +1405,49 @@ _Generated by Pembukuan App_`;
             }
         }
 
-        // Event Listeners
+        // ===== EVENT LISTENERS =====
         function setupEventListeners() {
-            // Keyboard
-            document.getElementById('transactionInput').addEventListener('keypress', e => {
+            // Tab navigation
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    switchTab(button.getAttribute('data-tab'));
+                });
+            });
+
+            // Transaction input
+            addTransactionBtn.addEventListener('click', addTransaction);
+            transactionInput.addEventListener('keypress', e => {
                 if (e.key === 'Enter') addTransaction();
             });
 
-            document.addEventListener('keydown', e => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                    e.preventDefault();
-                    document.getElementById('transactionInput').focus();
-                }
-                if (e.key === 'Escape') {
-                    document.getElementById('transactionInput').value = '';
-                }
-                if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    const tabs = ['input', 'current', 'reports', 'settings'];
-                    switchTab(tabs[parseInt(e.key) - 1]);
-                }
-            });
-
-            // Settings
+            // Settings buttons
+            saveEmailBtn.addEventListener('click', saveEmailSettings);
+            saveWhatsAppBtn.addEventListener('click', saveWhatsAppSettings);
+            saveExportSettingsBtn.addEventListener('click', saveExportSettings);
+            
+            // Export buttons
+            exportExcelBtn.addEventListener('click', () => exportSelectedMonth('excel'));
+            exportCsvBtn.addEventListener('click', () => exportSelectedMonth('csv'));
+            
+            // Share buttons
+            copyReportBtn.addEventListener('click', copyReportToClipboard);
+            shareWhatsAppBtn.addEventListener('click', shareToWhatsApp);
+            shareTelegramBtn.addEventListener('click', shareToTelegram);
+            sendEmailBtn.addEventListener('click', sendEmailReport);
+            
+            // Tool buttons
+            clearCurrentMonthBtn.addEventListener('click', clearCurrentMonth);
+            exportAllExcelBtn.addEventListener('click', () => exportAllData('excel'));
+            exportAllCsvBtn.addEventListener('click', () => exportAllData('csv'));
+            backupDataBtn.addEventListener('click', backupData);
+            restoreDataBtn.addEventListener('click', restoreData);
+            printReportBtn.addEventListener('click', printReport);
+            clearAllDataBtn.addEventListener('click', clearAllData);
+            
+            // Theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Settings checkboxes
             document.getElementById('autoExport').addEventListener('change', function() {
                 settings.autoExport = this.checked;
                 saveSettings();
@@ -1417,6 +1461,7 @@ _Generated by Pembukuan App_`;
                 saveSettings();
             });
 
+            // Email and WhatsApp input blur
             document.getElementById('emailAddress').addEventListener('blur', function() {
                 if (this.value !== settings.email) {
                     settings.email = this.value;
@@ -1433,14 +1478,47 @@ _Generated by Pembukuan App_`;
                 }
             });
 
-            // Selectors
+            // Report selectors
             document.getElementById('reportMonth').addEventListener('change', loadReportView);
             document.getElementById('reportYear').addEventListener('change', loadReportView);
 
             // Input validation
-            document.getElementById('transactionInput').addEventListener('input', function(e) {
+            transactionInput.addEventListener('input', function(e) {
                 const amount = parseAmount(e.target.value);
                 this.style.borderColor = amount > 0 ? 'var(--secondary)' : 'var(--border)';
+            });
+
+            // Delete buttons (delegated)
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('delete-btn')) {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    deleteTransaction(id);
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    transactionInput.focus();
+                }
+                if (e.key === 'Escape') {
+                    transactionInput.value = '';
+                }
+                if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    const tabs = ['input', 'current', 'reports', 'settings'];
+                    switchTab(tabs[parseInt(e.key) - 1]);
+                }
+            });
+
+            // Prevent drag and drop of files
+            document.addEventListener('drop', function(e) {
+                e.preventDefault();
+            });
+
+            document.addEventListener('dragover', function(e) {
+                e.preventDefault();
             });
         }
 
@@ -1456,90 +1534,8 @@ _Generated by Pembukuan App_`;
             }, 3000);
         }
 
-        // Initialize app
+        // ===== INITIALIZE APP =====
         document.addEventListener('DOMContentLoaded', initializeApp);
-    </script>
-</body>
-</html>ni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    
-    months.forEach((month, index) => {
-        const option = document.createElement('option');
-        option.value = index + 1;
-        option.textContent = month;
-        monthSelect.appendChild(option);
-    });
-    
-    const currentYear = new Date().getFullYear();
-    for (let year = currentYear; year >= currentYear - 5; year--) {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        yearSelect.appendChild(option);
-    }
-    
-    // Set default ke bulan dan tahun saat ini
-    const current = getCurrentMonth();
-    monthSelect.value = current.month;
-    yearSelect.value = current.year;
-}
-
-function loadReportView() {
-    const month = parseInt(document.getElementById('reportMonth').value);
-    const year = parseInt(document.getElementById('reportYear').value);
-    
-    const monthData = getTransactionsByMonth(year, month);
-    const container = document.getElementById('reportList');
-    const totalElement = document.getElementById('selectedMonthTotal');
-    
-    const total = monthData.reduce((sum, t) => sum + t.amount, 0);
-    totalElement.textContent = formatNumber(total);
-    
-    if (monthData.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div>📊</div>
-                <div>Tidak ada transaksi di bulan ini</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = monthData.map(transaction => `
-        <div class="transaction-item">
-            <div class="transaction-desc">
-                <strong>${transaction.description}</strong>
-                <div class="transaction-date">${transaction.displayDate}</div>
-            </div>
-            <div class="transaction-amount">${formatNumber(transaction.amount)}</div>
-        </div>
-    `).join('');
-}
-
-function showNotification(message, type = 'success') {
-    const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.style.background = type === 'success' ? 'var(--secondary)' : 
-                                  type === 'warning' ? 'var(--warning)' : 'var(--danger)';
-    notification.style.display = 'block';
-    
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 3000);
-}
-
-// Initialize app when page loads
-document.addEventListener('DOMContentLoaded', initializeApp);
-
-// Prevent drag and drop of files
-document.addEventListener('drop', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('dragover', function(e) {
-    e.preventDefault();
-});
     </script>
 </body>
 </html>
