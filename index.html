@@ -6,8 +6,8 @@
     <title>Pembukuan Pendapatan</title>
     <meta name="description" content="Aplikasi pembukuan pendapatan bulanan">
     <meta name="theme-color" content="#6366f1"/>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./icon-192.png">
     <style>
         :root {
             --primary: #6366f1;
@@ -1121,7 +1121,7 @@ function initializeApp() {
     
     // Register Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
+        navigator.serviceWorker.register('./sw.js')
             .then(registration => {
                 console.log('SW registered: ', registration);
                 updatePWAStatus('Aktif + Offline');
@@ -1671,4 +1671,4 @@ document.addEventListener('dragover', function(e) {
 });
     </script>
 </body>
-    </html>
+</html>

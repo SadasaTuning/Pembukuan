@@ -1,32 +1,35 @@
-const CACHE_NAME = 'pembukuan-v2.0.0';
+const CACHE_NAME = 'pembukuan-pwa-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/icon-192.png',
-    '/icon-512.png'
+    './',
+    './index.html',
+    './manifest.json',
+    './icon-192.png',
+    './icon-512.png'
 ];
 
-// Install Event
 self.addEventListener('install', function(event) {
-    console.log('Service Worker: Installing...');
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(function(cache) {
-                console.log('Service Worker: Caching App Shell');
+                console.log('Opened cache');
                 return cache.addAll(urlsToCache);
             })
-            .then(() => self.skipWaiting())
     );
 });
 
-// Activate Event
-self.addEventListener('activate', function(event) {
-    console.log('Service Worker: Activating...');
-    event.waitUntil(
-        caches.keys().then(function(cacheNames) {
-            return Promise.all(
-                cacheNames.map(function(cacheName) {
+self.addEventListener('fetch', function(event) {
+    event.respondWith(
+        caches.match(event.request)
+            .then(function(response) {
+                // Cache hit - return response
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request);
+            }
+        )
+    );
+});      cacheNames.map(function(cacheName) {
                     if (cacheName !== CACHE_NAME) {
                         console.log('Service Worker: Deleting Old Cache', cacheName);
                         return caches.delete(cacheName);
